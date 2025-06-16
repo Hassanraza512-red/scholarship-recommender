@@ -6,7 +6,6 @@ import nltk
 from app.data_utils import load_data
 from app.recommender import recommend_scholarships, semantic_recommend, query_ollama_cli
 
-# 1️⃣ Setup caches
 @st.cache_resource
 def setup_nltk():
     nltk.download('stopwords', quiet=True)
@@ -22,7 +21,6 @@ def get_model():
     from sentence_transformers import SentenceTransformer
     return SentenceTransformer('all-mpnet-base-v2')
 
-# Trigger initial setup
 _ = setup_nltk()
 df = get_data()
 
@@ -42,7 +40,6 @@ if mode == "Rule‑based":
 else:
     st.header("Semantic (Chatbot‑style)")
 
-    # ── Quick Search Form ─────────────────────────
     with st.form(key="quick_form"):
         original = st.text_input("Describe what you want",
                                  value=st.session_state.get("original","e.g. scholarships in the USA"),
@@ -50,14 +47,11 @@ else:
         submit_quick = st.form_submit_button("Quick Search")
 
     if submit_quick:
-        # store the original query
         st.session_state.original = original
 
-        # load model & run embeddings
         with st.spinner("Loading model & searching…"):
             _model = get_model()
 
-            # infer country
             inferred = None
             for c in pycountry.countries:
                 if c.name.lower() in original.lower():
@@ -76,12 +70,10 @@ else:
                 user_degree   = None
             )
 
-        # save to session
         st.session_state.inferred   = inferred
         st.session_state.paraphrase = paraphrase
         st.session_state.quick      = quick
 
-    # ── Show Quick Results Once Available ─────────
     if st.session_state.get("quick") is not None:
         st.write("**Paraphrased:**", st.session_state.paraphrase)
         quick = st.session_state.quick
@@ -91,7 +83,6 @@ else:
             st.subheader("Quick Results")
             st.dataframe(quick[["Title","Provider","Country","Similarity"]])
 
-        # ── Refine Form ───────────────────────────────
         with st.form(key="refine_form"):
             st.markdown("**Refine your search**")
             field2 = st.text_input("Field of study (optional)", key="f2")

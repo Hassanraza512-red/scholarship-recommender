@@ -23,7 +23,7 @@ def query_ollama_cli(prompt: str, model: str = "llama3") -> str:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         return result.stdout.strip()
     except Exception as e:
-        print(f"⚠️ Ollama CLI call failed: {e}")
+        print(f"Ollama CLI call failed: {e}")
         return prompt
 
 
@@ -94,7 +94,6 @@ def generate_explanation(user_query, scholarship_row, user_country=None, user_de
         except Exception:
             pass
 
-    # If no specific explanations, fallback
     if not explanations:
         return "This scholarship may match your interests based on general similarity."
 
@@ -130,15 +129,12 @@ def rerank_scholarships(df, user_country=None, user_deadline=None):
 
 
 def semantic_recommend(df, user_query, top_n=5, user_country=None, user_deadline=None, fee_pref=None, user_degree=None):
-    # Strict country filter using word-boundary regex
     if user_country:
         pattern = fr"\b{user_country}\b"
         df = df[df['Country'].str.contains(pattern, case=False, na=False, regex=True)]
-        # If no scholarships after filtering, return empty DataFrame early
         if df.empty:
             return df
 
-    # Build text corpus and embeddings
     text_corpus = df['Description'].fillna('') + " " + df['Eligibility_Criteria'].fillna('')
     embeddings = model.encode(text_corpus.tolist(), convert_to_tensor=True)
     query_embedding = model.encode(user_query, convert_to_tensor=True)
@@ -150,7 +146,6 @@ def semantic_recommend(df, user_query, top_n=5, user_country=None, user_deadline
     df = df.copy()
     df['Similarity'] = scores
 
-    # Degree bias
     if user_degree:
         degree_keywords = {
             'undergraduate': ['undergraduate', 'bachelor'],
@@ -162,7 +157,6 @@ def semantic_recommend(df, user_query, top_n=5, user_country=None, user_deadline
         )
         df.loc[df['Degree_Match'], 'Similarity'] += 0.1
 
-    # Rerank for country and deadlines
     df = rerank_scholarships(df, user_country=user_country, user_deadline=user_deadline)
 
     top_matches = df.head(top_n).copy()

@@ -10,7 +10,6 @@ from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
 import os
 
-# Initialize NLP components
 nltk.download('stopwords')
 nltk.download('wordnet')
 model = SentenceTransformer('all-mpnet-base-v2')
@@ -25,7 +24,7 @@ def query_ollama_cli(prompt: str, model: str = "llama3") -> str:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         return result.stdout.strip()
     except Exception as e:
-        print(f"⚠️ Ollama CLI call failed: {e}")
+        print(f"Ollama CLI call failed: {e}")
         return prompt
 
 
@@ -96,7 +95,6 @@ def generate_explanation(user_query, scholarship_row, user_country=None, user_de
         except Exception:
             pass
 
-    # If no specific explanations, fallback
     if not explanations:
         return "This scholarship may match your interests based on general similarity."
 
@@ -132,7 +130,6 @@ def rerank_scholarships(df, user_country=None, user_deadline=None):
 
 
 def semantic_recommend(df, user_query, top_n=5, user_country=None, user_deadline=None, fee_pref=None, user_degree=None):
-    # Strict country filter
     if user_country:
         pattern = fr"\b{user_country}\b"
         df = df[df['Country'].str.contains(pattern, case=False, na=False, regex=True)]
@@ -189,7 +186,7 @@ def load_data(path='data/raw/scholarships_mock.csv'):
     }
     if not expected_columns.issubset(df.columns):
         raise ValueError(f"CSV is missing expected columns. Found: {df.columns.tolist()}")
-    print(f"✅ Loaded data with shape: {df.shape}")
+    print(f"Loaded data with shape: {df.shape}")
     return df
 
 
@@ -206,7 +203,7 @@ def get_user_profile():
         try:
             deadline = pd.to_datetime(deadline_input)
         except:
-            print("⚠️ Invalid date format, ignoring deadline.")
+            print("Invalid date format, ignoring deadline.")
     return {
         "degree": degree,
         "field": field,
@@ -217,13 +214,13 @@ def get_user_profile():
 
 
 def main():
-    print("📦 Loading scholarship data...")
+    print("Loading scholarship data...")
     df = load_data()
     if df.empty:
-        print("❌ No data loaded.")
+        print("No data loaded.")
         return
 
-    print("✅ Data loaded successfully.")
+    print("Data loaded successfully.")
     print(df.head())
 
     print("\n🤖 Select Recommendation Mode:")
@@ -232,7 +229,6 @@ def main():
     mode = input("Enter 1 or 2: ").strip()
 
     if mode == "1":
-        # (unchanged rule-based mode)
         profile = get_user_profile()
         matches = recommend_scholarships(
             df,
@@ -245,33 +241,29 @@ def main():
                 matches['Eligibility_Criteria'].str.contains(profile['degree'], case=False, na=False)
             ]
         if matches.empty:
-            print("❌ No scholarships found.")
+            print("No scholarships found.")
         else:
             print(matches[['Title','Provider','Fields_of_Study','Country','Application_Fee']])
 
     elif mode == "2":
-        # ── Modified Semantic (AI) mode with chatbot-like flow ──
         original_query = input(
             "Enter your request (e.g., 'I want scholarships in the USA'): "
         ).strip()
 
-        # Infer country from original query
         inferred_country = None
         for country in pycountry.countries:
             if country.name.lower() in original_query.lower():
                 inferred_country = country.name
                 break
 
-        # Paraphrase via Ollama
-        print("\n🤖 Paraphrasing your query…")
+        print("\nParaphrasing your query…")
         paraphrase_prompt = (
             "Paraphrase this query exactly—do not add anything:\n\n" + original_query
         )
         refined_query = query_ollama_cli(paraphrase_prompt)
         print("Paraphrased query:", refined_query)
 
-        # PASS 1: Quick results
-        print("\n🔎 Quick results based on country…\n")
+        print("\nQuick results based on country…\n")
         initial = semantic_recommend(
             df,
             user_query=refined_query,
@@ -279,13 +271,12 @@ def main():
             top_n=5
         )
         if initial.empty:
-            print("❌ No quick matches. Try a broader request.")
+            print("No quick matches. Try a broader request.")
         else:
             for idx, row in initial.iterrows():
                 print(f"{idx+1}. {row['Title']} — {row['Provider']} ({row['Country']})")
         print("\nLet's refine further…\n")
 
-        # PASS 2: Follow-ups
         field = input("Field of study? (or skip): ").strip().lower() or None
         fee_ans = input("No‑fee only? (Yes/No or skip): ").strip().lower()
         fee_pref = True if fee_ans == "yes" else False if fee_ans == "no" else None
@@ -295,10 +286,9 @@ def main():
             try:
                 deadline = pd.to_datetime(deadline_input)
             except:
-                print("⚠️ Invalid date, skipping.")
+                print("Invalid date, skipping.")
         degree = input("Degree level? undergraduate/graduate or skip: ").strip().lower() or None
 
-        # PASS 3: Final refined results
         print("\n🔎 Final refined recommendations:\n")
         final = semantic_recommend(
             df,
@@ -310,14 +300,14 @@ def main():
             top_n=5
         )
         if final.empty:
-            print("❌ No scholarships found after refinement.")
+            print("No scholarships found after refinement.")
         else:
             for idx, row in final.iterrows():
                 print(f"{idx+1}. {row['Title']} — {row['Provider']}")
                 print(f"   {row['Explanation']}\n")
 
     else:
-        print("⚠️ Invalid mode. Please choose 1 or 2.")
+        print("Invalid mode. Please choose 1 or 2.")
 
 
 if __name__ == "__main__":

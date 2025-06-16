@@ -15,7 +15,6 @@ def load_data(path='data/raw/scholarships_mock.csv'):
 
     df = pd.read_csv(path, encoding='latin1')
 
-    # Updated column validation based on your actual CSV
     expected_columns = {
         'Title', 'Provider', 'Description', 'Eligibility_Criteria',
         'Fields_of_Study', 'Amount', 'Deadline', 'Country', 'Application_Fee'
@@ -23,7 +22,7 @@ def load_data(path='data/raw/scholarships_mock.csv'):
     if not expected_columns.issubset(df.columns):
         raise ValueError(f"CSV is missing expected columns. Found: {df.columns.tolist()}")
 
-    print(f"✅ Loaded data with shape: {df.shape}")
+    print(f"Loaded data with shape: {df.shape}")
     print(df.head())
 
     return df
