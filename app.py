@@ -33,7 +33,7 @@ if mode == "Rule‑based":
     field   = st.text_input("Field of study (optional)")
     country = st.text_input("Preferred country (optional)")
     fee_opt = st.selectbox("No application fee?", ["No preference","Yes","No"])
-    fee_flag= None if fee_opt=="No preference" else (fee_opt=="Yes")
+    fee_flag= None if fee_opt=="No preference" else (fee_opt=="No")
 
     if st.button("Search"):
         results = recommend_scholarships(df, field, country, fee_flag)
